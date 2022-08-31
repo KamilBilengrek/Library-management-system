@@ -41,4 +41,4 @@ Contribution, issues and feature requests are welcome!
 ## License
 
 Copyright (c) 2022 Kamil Bilengrek  
-This project is [MIT](https://github.com/KamilBilengrek/Order-Summary-page/blob/main/LICENSE.txt) licensed
+This project is [MIT](https://github.com/KamilBilengrek/Library-management-system/blob/main/LICENSE.txt) licensed
