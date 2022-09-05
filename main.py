@@ -4,11 +4,13 @@ from tkinter import *
 from tkinter import messagebox
 
 # TODO list
-# TODO: confirmations
+# TODO: confirmations  -  DONE
 # TODO: reset id
+# TODO: add cancel/close buttons  -  DONE
+# TODO: fix bugs
 # TODO: GUI  -  DONE
 # TODO: prettier data display from db (make a table not just display in multiline)  -  DONE
-# TODO: more, better comments (doable?)
+# TODO: more, better comments (is this even doable?)
 
 
 # classes
@@ -21,7 +23,11 @@ class User:
     def add_to_db(self):
         query = f"INSERT INTO users(name, age, books_lend) VALUES('{self.name}', {self.age}, {self.books_lend})"
         try:
-            cursor.execute(query)
+            decision = messagebox.askyesno("Are you sure?", f"Do you want to add {self.name} age {self.age}?")
+            if decision is True:
+                cursor.execute(query)
+            else:
+                return
         except sqlite3.OperationalError as e:
             messagebox.showerror("Error!", f"Inserting user has been unsuccessful! \n {e}")
         else:
@@ -39,7 +45,11 @@ class Book:
         query = f"INSERT INTO books(title, author, publish_date) " \
                 f"VALUES('{self.title}', '{self.author}', '{self.publish_date}')"
         try:
-            cursor.execute(query)
+            decision = messagebox.askyesno("Are you sure?", f"Do you want to add {self.title} published by {self.author} on {self.publish_date}?")
+            if decision is True:
+                cursor.execute(query)
+            else:
+                return
         except sqlite3.OperationalError as e:
             messagebox.showerror("Error!", f"Inserting book has been unsuccessful! \n {e}")
         else:
@@ -56,8 +66,12 @@ class LendingData:
         query = f"INSERT INTO lending_data(user_name, book_title) VALUES('{self.name}', '{self.title}')"
         update_books_lend = f"UPDATE users SET books_lend = books_lend + 1 WHERE name = '{self.name}'"
         try:
-            cursor.execute(query)
-            cursor.execute(update_books_lend)
+            decision = messagebox.askyesno("Are you sure?", f"Do you want to add {self.name} who lent {self.title}?")
+            if decision is True:
+                cursor.execute(query)
+                cursor.execute(update_books_lend)
+            else:
+                return
         except sqlite3.OperationalError as e:
             messagebox.showerror("Error!", f"Inserting lending data has been unsuccessful! \n {e}")
         else:
@@ -79,9 +93,9 @@ def add_record_to_db(name_of_table):
 
     adding_to_db_window = Toplevel()
     adding_to_db_window.title(f"Add a record to the {name_of_table} table")
-    adding_to_db_window.geometry("250x130")
 
     if name_of_table == "users":
+        adding_to_db_window.geometry("250x130")
         # labels
         name_label = Label(adding_to_db_window, text="Name: ")
         name_label.grid(row=0, column=0)
@@ -97,6 +111,7 @@ def add_record_to_db(name_of_table):
         age_entry.grid(row=1, column=1)
 
     if name_of_table == "books":
+        adding_to_db_window.geometry("300x170")
         # labels
         title_label = Label(adding_to_db_window, text="Title: ")
         title_label.grid(row=0, column=0)
@@ -118,6 +133,7 @@ def add_record_to_db(name_of_table):
         publish_date_entry.grid(row=2, column=1)
 
     if name_of_table == "lending_data":
+        adding_to_db_window.geometry("250x130")
         # labels
         lending_name_label = Label(adding_to_db_window, text="Name: ")
         lending_name_label.grid(row=0, column=0)
@@ -135,6 +151,10 @@ def add_record_to_db(name_of_table):
     # button
     add_button = Button(adding_to_db_window, text="Add to database", command=lambda: adding(name_of_table))
     add_button.grid(row=3, column=0, columnspan=2)
+
+    # cancel button
+    cancel_button = Button(adding_to_db_window, text="Cancel", command=adding_to_db_window.destroy)
+    cancel_button.grid(row=4, column=0, columnspan=2)
 
 
 def adding(name_of_table):
@@ -160,6 +180,7 @@ def adding(name_of_table):
 # deleting from the database
 def delete_from_db(name_of_table, id_column):
     global id_entry
+    global remove_from_db
 
     remove_from_db = Toplevel()
     remove_from_db.title(f"Remove item from the {name_of_table} table")
@@ -171,19 +192,29 @@ def delete_from_db(name_of_table, id_column):
     id_entry = Entry(remove_from_db)
     id_entry.grid(row=0, column=1)
 
+    # remove button
     remove_btn = Button(remove_from_db, text="Delete a record", command=lambda: removing(name_of_table, id_column))
     remove_btn.grid(row=3, column=0, columnspan=2)
+
+    # cancel button
+    cancel_button = Button(remove_from_db, text="Cancel", command=remove_from_db.destroy)
+    cancel_button.grid(row=4, column=0, columnspan=2)
 
 
 def removing(name_of_table, id_column):
     query = f"DELETE FROM {name_of_table} WHERE {id_column} = {id_entry.get()}"
     try:
-        cursor.execute(query)
+        decision = messagebox.askyesno("Are you sure?", f"Do you want to remove an id of '{id_entry.get()}' from the '{name_of_table}' table?")
+        if decision is True:
+            cursor.execute(query)
+        else:
+            return
     except sqlite3.OperationalError as e:
         messagebox.showerror("Error!", f"Removing record has been unsuccessful! \n {e}")
     else:
         con.commit()  # committing changes
         messagebox.showinfo("Success!", "Removing record has been successful!")
+        remove_from_db.destroy()
 
 
 # displaying data from the table
@@ -197,6 +228,12 @@ def show_from_db(name_of_table):
     cursor.execute(query)
     rows = cursor.fetchall()
 
+    # checking if table has any records
+    if len(rows) == 0:
+        messagebox.showerror("Error!", "There is no data in a table!")
+        view_window.destroy()
+        return
+
     # creating a table made of the data set from database
     for row in range(len(rows)):
         for record in range(len(rows[0])):
@@ -204,6 +241,10 @@ def show_from_db(name_of_table):
             e.grid(row=row, column=record)
             e.insert(END, rows[row][record])
             e.config(state=DISABLED)
+
+    # close
+    close_button = Button(view_window, text="Close", command=view_window.destroy)
+    close_button.grid(row=row+1, column=0, sticky=S+W)
 
 
 # checking if entered name and book title exists in database
